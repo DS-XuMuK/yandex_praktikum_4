@@ -3,8 +3,12 @@ package com.yandex.practicum.middle_homework_4.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.ExperimentalPagingApi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import androidx.paging.compose.LazyPagingItems
+import com.yandex.practicum.middle_homework_4.data.NewsRemoteMediator
 import com.yandex.practicum.middle_homework_4.data.database.NewsDatabase
 import com.yandex.practicum.middle_homework_4.data.database.entity.News
 import com.yandex.practicum.middle_homework_4.data.setting_repository.SettingContainer
@@ -23,10 +27,19 @@ class AppViewModel(
     private var pagingItems: LazyPagingItems<News>? = null
 
     @OptIn(ExperimentalPagingApi::class)
-    fun getNews(): Flow<PagingData<News>> =
-    // Допишите реализацию метода, используя класс Pager()
-    // Для реализации фабрики используйте newsDatabase
-    // Реализуйте NewsRemoteMediator() используя newsService и newsDatabase
+    fun getNews(): Flow<PagingData<News>> = Pager(
+        config = PagingConfig(
+            pageSize = PAGE_SIZE,
+            enablePlaceholders = false,
+            prefetchDistance = PREFETCH_DISTANCE
+        ),
+        remoteMediator = NewsRemoteMediator(
+            newsService = newsService,
+            newsDatabase = newsDatabase,
+        ),
+    ) {
+        newsDatabase.getNewsDao().getNews()
+    }.flow.cachedIn(viewModelScope)
 
     fun attachPagingItems(paging: LazyPagingItems<News>?) {
         pagingItems = paging
@@ -36,7 +49,7 @@ class AppViewModel(
         pagingItems = null
     }
 
-    fun refreshData(){
+    fun refreshData() {
         pagingItems?.refresh()
     }
 
